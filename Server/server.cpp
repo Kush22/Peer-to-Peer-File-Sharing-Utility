@@ -1,6 +1,5 @@
 /**
   * Name: Kushagra Gupta
-  * Roll no: 20172079
 **/
 
 #include "server_header.h"
