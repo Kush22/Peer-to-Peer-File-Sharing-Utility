@@ -164,24 +164,12 @@ void * uploadFile(void * connection_details){
     logClient(("Connection Established with " + connection_info.conn_ip + " from port " + to_string(connection_info.conn_port)).c_str());
 
     string data_received = receiveData(connection_info.confd);
-    // cout << "Data from download-client: " << data_received;
-
-    // if(data_received[0] == '/')
+    
     if(data_received[0] != '/'){
         data_received = '/' + data_received;
     }
 
-    // cout_lock.lock();
-    // // cout << endl << "Root:(uploadFile): " <<  connection_info.client_root;
-    // cout.flush();
-    // cout_lock.unlock();
-
     string file_to_download = connection_info.client_root + data_received;
-
-    // cout_lock.lock();
-    // cout << endl << "File to download: " << file_to_download;
-    // cout.flush();
-    // cout_lock.unlock();
 
     int readCounter, writeCounter;
     char* bufptr;
@@ -189,12 +177,7 @@ void * uploadFile(void * connection_details){
 
     int file_fd;
     
-    // cout << "\nopening :" << file_to_download.c_str();
-    // cout.flush();
-
     file_fd = open(file_to_download.c_str(), O_RDONLY);
-
-    // cout << "Open fd: " << file_fd;
 
     if(file_fd == -1){
         message_to_send = "File to download could not be opened";
@@ -205,7 +188,6 @@ void * uploadFile(void * connection_details){
 
     /* read the file, and send it to the client in chunks of size MAXBUF */
     while((readCounter = read(file_fd, buf, BUFFSIZE)) > 0){
-        // cout << "transferring data";
         writeCounter = 0;
         bufptr = buf;
         while (writeCounter < readCounter){
@@ -224,11 +206,6 @@ void * uploadFile(void * connection_details){
 
     close(file_fd);
 
-    // message_to_send="";
-    // message_to_send = "Your file is downloaded";
-
-    //send(connection_info.confd, message_to_send.c_str(), message_to_send.length(), 0);
-
     close(connection_info.confd);
     string log_message = "Thread " + to_string(pthread_self()) + " with pid " + to_string(getpid()) + "(download-server) closed";
     logClient(log_message.c_str());
@@ -242,17 +219,6 @@ void * threadServer(void * server_details){
 
     client_data client_info;
     client_info = *((client_data *) server_details);
-
-    // if(string(client_info.client_root).find('\0') != string::npos){
-    //     cout << "NUll in name";
-    //     cout << string(client_info.client_root).find_last_of('\0');
-    //     cout << string(client_info.client_root).substr(string(client_info.client_root).find_last_of('\0')+1);
-    // }
-    // cout_lock.lock();
-    // cout << "\n Len: " << string(client_info.client_root).length();
-    // cout << "\n Top: " << string(client_info.client_root);
-    // cout.flush();
-    // cout_lock.unlock();
 
     struct sockaddr_in servaddr, cliaddr;
     int listenfd, confd;
@@ -302,23 +268,11 @@ void * threadServer(void * server_details){
             err_sys("Accept Error");
         }
 
-        // cout << "\n Client_Server: " << confd;
-
-        // cout_lock.lock();
-        // cout << "\n1: Root: " << string(client_info.client_root);
-        // cout.flush();
-        // cout_lock.unlock();
-
         connection_data connection_info;
         connection_info.conn_ip = inet_ntoa(cliaddr.sin_addr);
         connection_info.conn_port = ntohs(cliaddr.sin_port);
         connection_info.confd = confd;
         connection_info.client_root = client_info.client_root;
-
-        // cout_lock.lock();
-        // cout << "\n 2. Client root : " << connection_info.client_root;
-        // cout.flush();
-        // cout_lock.unlock();
 
         int thread_status;
         thread_status = pthread_create(&thread_id, NULL, uploadFile, (void *) &connection_info);
@@ -363,8 +317,6 @@ void * downloadFile(void * cServer_details){
 
     sendData(confd, download_info.relative_path_client);
 
-    // cout << "rel path sent: " << download_info.relative_path_client;
-
     int output_file_fd, counter;
     char buf[BUFFSIZE];
 
@@ -372,7 +324,6 @@ void * downloadFile(void * cServer_details){
         download_info.output_file = '/' + download_info.output_file;
 
     string outFile = string(download_info.client_root) + download_info.output_file;
-    // cout << "Outfile: " <<  outFile << "\n";
 
     output_file_fd = open(outFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC , 0777);
     if (output_file_fd == -1){
@@ -380,10 +331,7 @@ void * downloadFile(void * cServer_details){
         cout << "Could not open destination file, using stdout.\n";
         output_file_fd = 1;
     }
-
-    // cout << "\noutput fd:" << output_file_fd;
-    // cout << endl;
-
+    
     while ((counter = read(confd, buf, BUFFSIZE)) > 0){
         //cout << "writing";
         write(output_file_fd, buf, counter);
@@ -391,20 +339,12 @@ void * downloadFile(void * cServer_details){
     }
     //cout << "File Received";
     if (counter == -1){
-        // cout << "Could not read file from socket!\n";
         err_sys("Could not read the download file from server");
     }
     else{
         logClient(("SUCCESS:" + download_info.output_file).c_str());
         cout << "\nSUCCESS:" << download_info.output_file;
     }
-
-
-    //sendData(confd, "I am downloading file");
-
-    //string data_received = receiveData(confd);
-
-    //cout << "Data(download-server): " << data_received;
 
     close(confd);
     logClient(("Thread " + to_string(pthread_self()) + " with pid " + to_string(getpid()) + " have downloaded information").c_str());
@@ -436,11 +376,8 @@ void * receiveRpcResuls(void * rpc_server_details){
         err_sys("Error in Connect");
     else
         cout << "\nConnection to the rpc_server established!\n";
-
-    //sendData(confd, rpc_command_info.relative_path_client);
-
+    
     sendData(confd, rpc_command_info.command);
-    // cout << "RPC-Receiver: " << rpc_command_info.command << endl;
 
     string data_received = receiveData(confd);
 
@@ -499,8 +436,6 @@ void * threadClient(void * client_details){
 
     string info_to_send;
     info_to_send = client_info.client_alias + "@#@" + client_info.client_ip + "@#@" + to_string(client_info.client_port) + "@#@" + to_string(client_info.cli_download_port);
-    // cout << "Data sent: " << info_to_send;
-
 
     /*Sending the client constant data to server*/
     sendData(confd, info_to_send);
@@ -541,8 +476,6 @@ void * threadClient(void * client_details){
             if(share_file_name[0] != '/')
                 share_file_name = '/' + share_file_name; 
             share_file_name = string(client_info.client_root) + share_file_name;
-
-            // cout << "Shared:" << share_file_name; 
             
             ifstream check_file;
             check_file.open(share_file_name.c_str());
@@ -582,9 +515,6 @@ void * threadClient(void * client_details){
             }
             else{
                 if(v[1][0] == '['){
-                    // Get case 1 (when the search entry provided)
-
-                    // cout << "Size: " << (int)v.size() << endl;
                     if((int)v.size() != 3){
                         cout << "FAILURE:INALID_ARGUMENTS";
                         continue;
@@ -592,9 +522,6 @@ void * threadClient(void * client_details){
 
                     /* Value after the [ (converting that char value to int) */
                     int index = (int)v[1][1]-48;
-
-                    // cout << " Index: " << index;
-                    // cout << " Size: " << (int)search_list.size();
 
                     if(index > (int)search_list.size()){
                         cout << "FAILURE:INVALID_ARGUMENTS:SEARCH ENTRY NOT PRESENT";
@@ -609,24 +536,18 @@ void * threadClient(void * client_details){
                         cServer_details.output_file = v[2];
                         cServer_details.client_root = client_info.client_root;
 
-                        // cout << "\nCserver Values: " << cServer_details.cServer_ip << " " << cServer_details.cServer_downPort;
                     }
                 }
                 else{
-                    // case when the alias is provided in the get request alias:relative_path
-
-                    // cout << "Size: " << (int)v.size() << endl;
                     if((int)v.size() != 4){
                         cout << "FAILURE:INALID_ARGUMENTS";
                         continue;
                     }
                     logClient(("GET Alias request sent to " + client_info.server_ip).c_str());
                     sendData(confd, user_command);
-                    // cout << "1: " << user_command << endl;
                     logClient(("GET Results received from " + client_info.server_ip).c_str());
                     string details_received = receiveData(confd);
 
-                    // cout << "2: " << details_received;
                     if(details_received.find("ERROR") != string::npos){
                         cout << "FAILURE:CLIENT_OFFLINE";
                     }
@@ -643,18 +564,15 @@ void * threadClient(void * client_details){
                         cServer_details.output_file = v[3];
                         cServer_details.client_root = client_info.client_root;
 
-                        // cout << "\nReceived from server: " << cServer_details.cServer_ip << " " << cServer_details.cServer_downPort; 
                     }
                 }
 
                 string get_file_name;
                 get_file_name = string(client_info.client_root) + '/' + cServer_details.filename;
 
-                // cout << "Shared:" << share_file_name; 
                 ifstream check_file;
                 check_file.open(get_file_name.c_str());
 
-                // cout << get_file_name;
                 if(check_file.good()){
                     cout << "FAILURE:ALREADY_EXISTS";
                     continue;
@@ -688,11 +606,8 @@ void * threadClient(void * client_details){
             }
 
             sendData(confd, user_command);
-            // cout << "1: " << user_command << endl;
 
             string details_received = receiveData(confd);
-
-            // cout << "2: " << details_received;
             if(details_received.find("ERROR") != string::npos){
                 cout << "FAILURE:CLIENT_OFFLINE";
                 continue;
@@ -706,7 +621,6 @@ void * threadClient(void * client_details){
                 rpc_server_details.rpc_server_port = alias_details[1];
                 rpc_server_details.command = v[2];
 
-                    // cout << "\nReceived from server (RPC Details): " << rpc_server_details.rpc_server_ip << " " << rpc_server_details.rpc_server_port; 
                 }
 
             rpc_thread_status = pthread_create(&rpc_thread_id, NULL, receiveRpcResuls, (void *) &rpc_server_details);
@@ -720,17 +634,9 @@ void * threadClient(void * client_details){
         }
         /*Recive if the file is present on the server. If yes: receive size else receive Error message regarding the same*/
         
-        // int n;
-        // do{
-        //     if(( n = recv(confd, recv_buffer.data(), recv_buffer.size(), 0)) == -1)
-        //         err_sys("Error receiving from server");
-        //     rec.append(recv_buffer.cbegin(), recv_buffer.cend());
-        // }while(n == BUFFSIZE);
-
         if(toLower(option) == "search"){
             sendData(confd, user_command);
             string rec = receiveData(confd);
-            //cout << "Message from server: " << rec << "\n";
 
             std::vector<string> search_items;
             search_items = split(rec.c_str());
@@ -750,14 +656,10 @@ void * threadClient(void * client_details){
                 cout << output; 
                 search_list.push_back(search_item);
             }
-            //cout <<"Search Res: " <<  search_items[0] << search_items[1];
         }
         
         fill(recv_buffer.begin(), recv_buffer.end(), 0);
     }
-
-    // cout << "\n=> Connection terminated.\nGoodbye...\n";
-
     close(confd);
 
     pthread_exit(EXIT_SUCCESS);
@@ -768,30 +670,22 @@ void * rpcRequest(void * connection_info){
     connection_data rpc_client_details;
     rpc_client_details = *((connection_data *)connection_info);
 
-    // cout << "-----------------------------------------------------------------------";
 
     logClient(("Thread " + to_string(pthread_self()) + " with pid " + to_string(getpid()) + " created").c_str());
     logClient(("Connection Established with " + rpc_client_details.conn_ip + " from port " + to_string(rpc_client_details.conn_port)).c_str());
 
     /* Receive RPC REQUEST*/
     string rpc_request = receiveData(rpc_client_details.confd);
-    // cout << "Client Data: "  << rpc_request << "\n";
-
-    // ofstream file("output.txt");
-    // file << rpc_request;
-    // file.close();
-
+   
     string command_request;
     string filename = ".rpc_temp";
     command_request = rpc_request + " | cat > " + filename;
-    // cout << "Request made : " << command_request << "\n";
     system(command_request.c_str());
 
     ifstream ifs(filename);
     string rpc_content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 
     /* Send RPC Results*/
-    // string message_to_send = "Received your request";
     sendData(rpc_client_details.confd, rpc_content);
 
     command_request = "rm " + filename;
@@ -897,14 +791,6 @@ int main(int argc, char* argv[])
     if(client_info.client_root[string(client_info.client_root).length() - 1] == '/'){
         client_info.client_root[string(client_info.client_root).length() - 1] = '\0';
     }
-
-    // cout << "Root: " << client_info.client_root;
-
-    // if(string(client_info.client_root).find('\0') != string::npos){
-    //     cout << "NUll in name Before";
-    //     cout << string(client_info.client_root).find_last_of('\0');
-    //     cout << string(client_info.client_root).substr(string(client_info.client_root).find_last_of('\0')+1);
-    // }
 
     pthread_t thread_cServer_id;
     pthread_t thread_cClient_id;
