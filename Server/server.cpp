@@ -178,7 +178,6 @@ void share(string file_to_share, string client_alias){
 
     ofstream repo_file;
  
-    //cout << "\nRepoFile Name: " << serv_info.repo_file;
 
     /*Locking the repofile access for synchronization*/
     repo_file_lock.lock();
@@ -261,7 +260,6 @@ string del(string file_to_delete, string client_alias){
         repo_file.open(serv_info.repo_file);
         
         
-        //cout << "Entering into file: After Delete: \n";
         if(!repo_file.bad()){
             for (std::vector<struct repo_file_structure>::iterator it = repo.begin(); it != repo.end(); ++it){
                 string insert_into_file = it->file_name + ":" + it->path + ":" + it->author_alias + "\n";
@@ -402,11 +400,8 @@ void* thread_proc(void * connection_details)
 
     client_data_struct client_data;
 
-    // cout << "-----------------------------------------------------------------------";
-    // cout << "\n\nThread " << pthread_self() << " with pid " << getpid() << " created";
     string message = "Thread ID:" + to_string(pthread_self()) + " with pid " + to_string(getpid()) +" created"; 
     logServer(message.c_str());
-    // cout << "\nConnection Established with " << connection_info.conn_ip << " from port " << connection_info.conn_port << "\n";
     message = "Connection Established with " + connection_info.conn_ip + " from port " + to_string(connection_info.conn_port);
     logServer(message.c_str());
 
@@ -414,22 +409,12 @@ void* thread_proc(void * connection_details)
     //cout << "Client Data: "  << cli_recv << "\n";
 
     client_data.client_alias = insertActiveClient(cli_recv);
-    
-    // for(auto var : active_client){
-    //     cout << var.first << " : ";
-    //     cout << get<0>(var.second) << " : ";
-    //     cout << get<1>(var.second) << " : ";
-    //     cout << get<2>(var.second);
-    //     cout << endl;
-    // }
 
 
     //int sock;
     char buffer[BUFFSIZE];
     int nread;
-
-    //sock = *(int*)confd;
-    //cout << sock;
+ 
     while(1){
         string message_to_send = "";
 
@@ -460,11 +445,8 @@ void* thread_proc(void * connection_details)
 
                 share(*it, client_data.client_alias);
                 repofile_iterator = &(*(repo.end()-1));
-                
-                //message_to_send = repofile_iterator->file_name + ":" + repofile_iterator->path + ":" + repofile_iterator->author_alias + "\n";
-                
+                                
                 message_to_send = "SUCCESS:FILE_SHARED\n";
-                // cout << message_to_send; 
             }
             else{
                 message_to_send = "Invalid file to share";
@@ -514,10 +496,7 @@ void* thread_proc(void * connection_details)
         }
 
         else if(toLower(query) == "get"){
-            //string message_to_send;
-            //cout << "\n Server: Inside get";
-            //string alias_request = receiveData(connection_info.confd);
-
+           
             message = "Get request from " + connection_info.conn_ip;
             logServer(message.c_str());
             
@@ -536,8 +515,6 @@ void* thread_proc(void * connection_details)
 
         message = "Data received from " + connection_info.conn_ip + " from port " + to_string(connection_info.conn_port);
         logServer(message.c_str());
-
-        // cout << "\nData received from " << connection_info.conn_ip << " from port " << connection_info.conn_port << "\n";
         
         send(connection_info.confd, message_to_send.c_str(), message_to_send.length(), 0);
         memset(&buffer, 0, sizeof(buffer));
@@ -588,11 +565,6 @@ int main(int argc, char* argv[])
     active_client_file.close();
 
     populate();
-
-    // ofstream repo_file;
-    // repo_file.open(serv_info.repo_file);
-    // repo_file.close();
-
     // TODO: Prepopulate both the data structures
 
 
@@ -616,8 +588,6 @@ int main(int argc, char* argv[])
     if (result < 0) {
         err_sys("Error in setting the socket options");
     }
-    //cout << "\n--Server Socket Created--\n" << endl;
-
 
 
     /* Assigning the values to the server structure */
@@ -648,7 +618,6 @@ int main(int argc, char* argv[])
         if(confd < 0)
             err_sys("Accept Error");
 
-        //cout << "\nServer: " << confd;
 
         connection_data connection_info;
         connection_info.conn_ip = inet_ntoa(cliaddr.sin_addr);
